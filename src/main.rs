@@ -17,7 +17,6 @@ use galaxy::{create_suns, update_vel_and_pos};
 
 const NUMBER_OF_SUNS: u32 = 3;
 const ZOOM_FACTOR: f32 = 1.2;
-const ZOOM_SMOOTH: f32 = 0.1;
 
 fn world_to_screen_coords(
     point: Point2,
@@ -31,6 +30,7 @@ fn world_to_screen_coords(
 }
 
 fn zoom_smooth(zoom_current: f32, zoom_target: f32) -> f32 {
+    const ZOOM_SMOOTH: f32 = 0.1;
     if (zoom_target - zoom_current).abs() < zoom_target / 1000.0 {
         zoom_target
     } else {
