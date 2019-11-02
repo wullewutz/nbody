@@ -3,12 +3,12 @@ use ggez::nalgebra as na;
 pub type Point2 = na::Point2<f32>;
 type Vector2 = na::Vector2<f32>;
 
-const SUN_MAX_STARTING_VELOCITY: f32 = 20.0;
+const SUN_MAX_STARTING_VELOCITY: f32 = 100.0;
 const SUN_MIN_MASS: f32 = 10.0;
 const SUN_MAX_MASS: f32 = 50.0;
 const SUN_DENSITY: f32 = 0.02; // higher density -> smaller radius
 const G: f32 = 1.0;
-const G_DARK: f32 = G / 1000.0;
+const G_DARK: f32 = G / 10000.0;
 
 #[derive(Debug, Clone, Copy)]
 enum ActorType {
