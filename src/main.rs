@@ -9,8 +9,14 @@ mod galaxy;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "nbody", about = "N bodies in space")]
-
+#[structopt(name = "nbody")]
+/// N bodies in a dark forest called space...
+///
+/// Key bindings:
+///
+/// i to zoom in.
+///
+/// o to zoom out.
 struct Opt {
     #[structopt(short, long, default_value = "3")]
     suns: u32,
