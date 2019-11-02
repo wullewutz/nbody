@@ -71,7 +71,7 @@ impl MainState {
         let (width, height) = graphics::drawable_size(ctx);
         let initial_zoom = 1.0;
         let s = MainState {
-            suns: create_suns(suns, 300.0),
+            suns: create_suns(suns, width / 2.0 ),
             screen_width: width,
             screen_height: height,
             zoom: initial_zoom,
