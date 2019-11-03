@@ -14,9 +14,11 @@ use structopt::StructOpt;
 ///
 /// Key bindings:
 ///
-/// i to zoom in.
+/// i - zoom in.
 ///
-/// o to zoom out.
+/// o - zoom out.
+///
+/// q - quit
 struct Opt {
     #[structopt(short, long, default_value = "3")]
     suns: u32,
