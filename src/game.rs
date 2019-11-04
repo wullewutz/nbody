@@ -59,7 +59,7 @@ fn draw_actor(ctx: &mut Context, actor: &Actor, world_coords: (f32, f32), zoom: 
         graphics::DrawMode::fill(),
         pos,
         actor.radius * zoom,
-        0.1,
+        0.05 * actor.radius / zoom,
         graphics::Color::new(0.0, 100.0, 0.0, 100.0),
     )?;
     graphics::draw(ctx, &circle, DrawParam::default())
