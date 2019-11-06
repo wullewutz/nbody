@@ -3,12 +3,22 @@ use ggez::nalgebra as na;
 pub type Point2 = na::Point2<f32>;
 type Vector2 = na::Vector2<f32>;
 
-const SUN_MAX_STARTING_VELOCITY: f32 = 100.0;
-const SUN_MIN_MASS: f32 = 10.0;
-const SUN_MAX_MASS: f32 = 50.0;
-const SUN_DENSITY: f32 = 0.02; // higher density -> smaller radius
-const G: f32 = 1.0;
-const G_DARK: f32 = G / 10000.0;
+//Star class taken from table at
+//https://de.wikipedia.org/wiki/Klassifizierung_der_Sterne
+const CLASS_O: f32 = 60.0;
+const CLASS_B: f32 = 18.0;
+const CLASS_A: f32 = 3.2;
+const CLASS_F: f32 = 1.7;
+const CLASS_G: f32 = 1.1;
+const CLASS_K: f32 = 0.8;
+const CLASS_M: f32 = 0.3;
+
+const G: f32 = 5_000.0;
+const G_DARK: f32 = G / 100_000.0;
+const SUN_MAX_STARTING_VELOCITY: f32 = 20.0;
+const SUN_MIN_MASS: f32 = CLASS_M;
+const SUN_MAX_MASS: f32 = CLASS_O;
+const SUN_DENSITY: f32 = 0.002; // higher density -> smaller radius
 
 #[derive(Debug, Clone, Copy)]
 enum ActorType {
@@ -23,6 +33,18 @@ pub struct Actor {
     pub radius: f32,
     velocity: Vector2,
     mass: f32,
+    pub color: u32,
+}
+
+fn color_from_mass(mass: f32) -> u32 {
+    if mass < CLASS_M { 0xfbc886ff }
+    else if mass < CLASS_K { 0xffd870ff }
+    else if mass < CLASS_G { 0xfdf9b3ff }
+    else if mass < CLASS_F { 0xf9fae7ff }
+    else if mass < CLASS_A { 0xdadde6ff }
+    else if mass < CLASS_B { 0xaabfffff }
+    else if mass < CLASS_O { 0x9bb0ffff }
+    else { 0xffffffff }
 }
 
 fn vec_from_angle(angle: f32) -> Vector2 {
@@ -51,7 +73,7 @@ fn total_mass(bodys: &[Actor]) -> f32 {
 
 pub fn create_suns(num: u32, galaxy_radius: f32) -> Vec<Actor> {
     let new_sun = |_| {
-        let m = SUN_MIN_MASS + rand::random::<f32>() * (SUN_MAX_MASS - SUN_MIN_MASS);
+        let m = SUN_MIN_MASS + rand::random::<f32>().powf(10.0) * (SUN_MAX_MASS - SUN_MIN_MASS);
         Actor {
             tag: ActorType::Sun,
             id: rand::random::<u32>(),
@@ -59,6 +81,7 @@ pub fn create_suns(num: u32, galaxy_radius: f32) -> Vec<Actor> {
             velocity: random_vec(SUN_MAX_STARTING_VELOCITY),
             mass: m,
             radius: (m / SUN_DENSITY * 0.75 / std::f32::consts::PI).cbrt(),
+            color: color_from_mass(m),
         }
     };
     let mut suns: Vec<Actor> = (0..num).map(new_sun).collect();
@@ -105,7 +128,7 @@ pub fn update_vel_and_pos(actors: &mut Vec<Actor>, dt: f32) {
         }
         //add little bit of dark matter gravity towards origin to avoid "exploding galaxys"
         let origin_vec = vec_from_points(actors[i].pos, Point2::origin());
-        actors[i].velocity += origin_vec * G_DARK;
+        actors[i].velocity += origin_vec.normalize() * G_DARK;
 
         //calculate new position of this actor
         let delta_pos = actors[i].velocity * dt;

@@ -58,9 +58,10 @@ fn draw_actor(ctx: &mut Context, actor: &Actor, world_coords: (f32, f32), zoom: 
         ctx,
         graphics::DrawMode::fill(),
         pos,
-        actor.radius * zoom,
+        // Raius + 1.0 in order to still draws actor for very far-out zooms.
+        actor.radius * zoom + 1.0,
         0.05 * actor.radius / zoom,
-        graphics::Color::new(0.0, 100.0, 0.0, 100.0),
+        graphics::Color::from_rgba_u32(actor.color),
     )?;
     graphics::draw(ctx, &circle, DrawParam::default())
 }
@@ -71,7 +72,7 @@ impl MainState {
         let (width, height) = graphics::drawable_size(ctx);
         let initial_zoom = 1.0;
         let s = MainState {
-            suns: create_suns(suns, width / 2.0 ),
+            suns: create_suns(suns, height / 5.0 * suns as f32 ),
             screen_width: width,
             screen_height: height,
             zoom: initial_zoom,
