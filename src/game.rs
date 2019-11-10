@@ -12,6 +12,7 @@ use super::galaxy::Point2;
 use super::galaxy::{create_suns, update_vel_and_pos};
 
 const ZOOM_FACTOR: f32 = 1.2;
+const SPEED_FACTOR: f32 = 2.0;
 
 struct MainState {
     suns: Vec<Actor>,
@@ -19,6 +20,8 @@ struct MainState {
     screen_height: f32,
     zoom: f32,
     zoom_target: f32,
+    speed: f32,
+    running: bool,
 }
 
 pub fn start(suns :u32) -> GameResult {
@@ -70,13 +73,14 @@ impl MainState {
     fn new(ctx: &mut Context, suns: u32) -> GameResult<MainState> {
         graphics::clear(ctx, (30, 40, 40, 255).into());
         let (width, height) = graphics::drawable_size(ctx);
-        let initial_zoom = 1.0;
         let s = MainState {
             suns: create_suns(suns, height / 5.0 * suns as f32 ),
             screen_width: width,
             screen_height: height,
-            zoom: initial_zoom,
-            zoom_target: initial_zoom,
+            zoom: 1.0,
+            zoom_target: 1.0,
+            speed: 1.0,
+            running: true,
         };
         Ok(s)
     }
@@ -85,11 +89,12 @@ impl MainState {
 impl EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
         const DESIRED_FPS: u32 = 60;
-        let dt = 1.0 / (DESIRED_FPS as f32);
-
+        let dt = self.speed / (DESIRED_FPS as f32);
         while timer::check_update_time(ctx, DESIRED_FPS) {
-            update_vel_and_pos(&mut self.suns, dt);
-            //println!("{}", timer::fps(ctx));
+            if self.running {
+                update_vel_and_pos(&mut self.suns, dt);
+            }
+            // println!("{}", timer::fps(ctx));
         }
         Ok(())
     }
@@ -115,6 +120,9 @@ impl EventHandler for MainState {
     ) {
         match keycode {
             KeyCode::Escape | KeyCode::Q => event::quit(ctx),
+            KeyCode::Space => self.running = !self.running,
+            KeyCode::Add => self.speed *= SPEED_FACTOR,
+            KeyCode::Subtract => self.speed /= SPEED_FACTOR,
             KeyCode::I => self.zoom_target *= ZOOM_FACTOR,
             KeyCode::O => self.zoom_target /= ZOOM_FACTOR,
             _ => (), //all other events are unhandled

@@ -14,9 +14,11 @@ use structopt::StructOpt;
 ///
 /// Key bindings:
 ///
-/// i - zoom in.
+/// Space - pause/resume
 ///
-/// o - zoom out.
+/// +/- - faster/slower
+///
+/// i/o - zoom in/out.
 ///
 /// q - quit
 struct Opt {
