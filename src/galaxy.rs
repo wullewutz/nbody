@@ -37,14 +37,14 @@ pub struct Actor {
 }
 
 fn color_from_mass(mass: f32) -> u32 {
-    if mass < CLASS_M { 0xfbc886ff }
-    else if mass < CLASS_K { 0xffd870ff }
-    else if mass < CLASS_G { 0xfdf9b3ff }
-    else if mass < CLASS_F { 0xf9fae7ff }
-    else if mass < CLASS_A { 0xdadde6ff }
-    else if mass < CLASS_B { 0xaabfffff }
-    else if mass < CLASS_O { 0x9bb0ffff }
-    else { 0xffffffff }
+    if mass < CLASS_M { 0xfbc8_86ff }
+    else if mass < CLASS_K { 0xffd8_70ff }
+    else if mass < CLASS_G { 0xfdf9_b3ff }
+    else if mass < CLASS_F { 0xf9fa_e7ff }
+    else if mass < CLASS_A { 0xdadd_e6ff }
+    else if mass < CLASS_B { 0xaabf_ffff }
+    else if mass < CLASS_O { 0x9bb0_ffff }
+    else { 0xffff_ffff }
 }
 
 fn vec_from_angle(angle: f32) -> Vector2 {
