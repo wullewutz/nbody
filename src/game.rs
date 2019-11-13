@@ -45,7 +45,7 @@ fn world_to_screen_coords(
     screen_width: f32,
     screen_height: f32,
     zoom: f32,
-    center: Point2
+    center: Point2,
 ) -> Point2 {
     let x = (point.x - center.x) * zoom + screen_width / 2.0;
     let y = -(point.y - center.y) * zoom + screen_height / 2.0;
@@ -54,13 +54,15 @@ fn world_to_screen_coords(
 
 fn zoom_smooth(zoom_current: f32, zoom_target: f32) -> f32 {
     const ZOOM_SMOOTH: f32 = 0.1;
-    zoom_current + (zoom_target -zoom_current) * ZOOM_SMOOTH
+    zoom_current + (zoom_target - zoom_current) * ZOOM_SMOOTH
 }
 
 fn move_smooth(center_current: Point2, center_target: Point2) -> Point2 {
     const MOVE_SMOOTH: f32 = 0.1;
-    Point2::new(center_current.x + MOVE_SMOOTH * (center_target.x - center_current.x),
-                center_current.y + MOVE_SMOOTH * (center_target.y - center_current.y))
+    Point2::new(
+        center_current.x + MOVE_SMOOTH * (center_target.x - center_current.x),
+        center_current.y + MOVE_SMOOTH * (center_target.y - center_current.y),
+    )
 }
 
 fn draw_actor(
@@ -68,7 +70,7 @@ fn draw_actor(
     actor: &Actor,
     world_coords: (f32, f32),
     zoom: f32,
-    center: Point2
+    center: Point2,
 ) -> GameResult {
     let (screen_w, screen_h) = world_coords;
     let pos = world_to_screen_coords(actor.pos, screen_w, screen_h, zoom, center);
@@ -122,8 +124,7 @@ impl EventHandler for MainState {
         self.zoom = zoom_smooth(self.zoom, self.zoom_target);
         self.center = move_smooth(self.center, self.center_target);
         for s in &self.suns {
-            draw_actor(ctx, s, coords, self.zoom, self.center)
-                .expect("failed to draw a sun");
+            draw_actor(ctx, s, coords, self.zoom, self.center).expect("failed to draw a sun");
         }
         graphics::present(ctx)?;
         timer::yield_now();

@@ -37,14 +37,23 @@ pub struct Actor {
 }
 
 fn color_from_mass(mass: f32) -> u32 {
-    if mass < CLASS_M { 0xfbc8_86ff }
-    else if mass < CLASS_K { 0xffd8_70ff }
-    else if mass < CLASS_G { 0xfdf9_b3ff }
-    else if mass < CLASS_F { 0xf9fa_e7ff }
-    else if mass < CLASS_A { 0xdadd_e6ff }
-    else if mass < CLASS_B { 0xaabf_ffff }
-    else if mass < CLASS_O { 0x9bb0_ffff }
-    else { 0xffff_ffff }
+    if mass < CLASS_M {
+        0xfbc8_86ff
+    } else if mass < CLASS_K {
+        0xffd8_70ff
+    } else if mass < CLASS_G {
+        0xfdf9_b3ff
+    } else if mass < CLASS_F {
+        0xf9fa_e7ff
+    } else if mass < CLASS_A {
+        0xdadd_e6ff
+    } else if mass < CLASS_B {
+        0xaabf_ffff
+    } else if mass < CLASS_O {
+        0x9bb0_ffff
+    } else {
+        0xffff_ffff
+    }
 }
 
 fn vec_from_angle(angle: f32) -> Vector2 {
@@ -73,8 +82,7 @@ fn total_mass(bodys: &[Actor]) -> f32 {
 
 pub fn create_suns(num: u32, galaxy_radius: f32) -> Vec<Actor> {
     let new_sun = |_| {
-        let m = SUN_MIN_MASS +
-            rand::random::<f32>().powf(10.0) * (SUN_MAX_MASS - SUN_MIN_MASS);
+        let m = SUN_MIN_MASS + rand::random::<f32>().powf(10.0) * (SUN_MAX_MASS - SUN_MIN_MASS);
         Actor {
             tag: ActorType::Sun,
             id: rand::random::<u32>(),
@@ -100,7 +108,8 @@ fn elastic_collision(a1: &Actor, a2: &Actor) -> (Vector2, Vector2) {
         this.velocity
             - 2.0 * that.mass / (this.mass + that.mass)
                 * (this.velocity - that.velocity).dot(&(this.pos - that.pos))
-                / (this.pos - that.pos).norm_squared() * (this.pos - that.pos)
+                / (this.pos - that.pos).norm_squared()
+                * (this.pos - that.pos)
     }
     (v_afterwards(a1, a2), v_afterwards(a2, a1))
 }
