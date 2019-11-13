@@ -73,7 +73,8 @@ fn total_mass(bodys: &[Actor]) -> f32 {
 
 pub fn create_suns(num: u32, galaxy_radius: f32) -> Vec<Actor> {
     let new_sun = |_| {
-        let m = SUN_MIN_MASS + rand::random::<f32>().powf(10.0) * (SUN_MAX_MASS - SUN_MIN_MASS);
+        let m = SUN_MIN_MASS +
+            rand::random::<f32>().powf(10.0) * (SUN_MAX_MASS - SUN_MIN_MASS);
         Actor {
             tag: ActorType::Sun,
             id: rand::random::<u32>(),

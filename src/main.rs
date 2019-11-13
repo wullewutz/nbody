@@ -14,6 +14,8 @@ use structopt::StructOpt;
 ///
 /// Key bindings:
 ///
+/// w/s/a/d - move up/down/left/right
+///
 /// Space - pause/resume
 ///
 /// +/- - faster/slower
