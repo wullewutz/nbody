@@ -1,4 +1,5 @@
 use ggez::nalgebra as na;
+use itertools::Itertools;
 
 pub type Point2 = na::Point2<f32>;
 type Vector2 = na::Vector2<f32>;
@@ -14,8 +15,8 @@ const CLASS_K: f32 = 0.8;
 const CLASS_M: f32 = 0.3;
 
 const G: f32 = 5_000.0;
-const G_DARK: f32 = G / 100_000.0;
-const SUN_MAX_STARTING_VELOCITY: f32 = 20.0;
+// const G_DARK: f32 = G / 100_000.0;
+const SUN_MAX_STARTING_VELOCITY: f32 = 100.0;
 const SUN_MIN_MASS: f32 = CLASS_M;
 const SUN_MAX_MASS: f32 = CLASS_O;
 const SUN_DENSITY: f32 = 0.002; // higher density -> smaller radius
@@ -115,34 +116,33 @@ fn elastic_collision(a1: &Actor, a2: &Actor) -> (Vector2, Vector2) {
 }
 
 pub fn update_vel_and_pos(actors: &mut Vec<Actor>, dt: f32) {
-    for i in 0..actors.len() {
-        for j in 0..actors.len() {
-            if i == j {
-                continue; //don't apply gravity if both bodys are identical
-            }
-            //apply gravity
-            let r_unit_vec = vec_from_points(actors[i].pos, actors[j].pos).normalize();
-            let dist_squ = na::distance_squared(&actors[i].pos, &actors[j].pos);
-            let g = r_unit_vec * (G * actors[i].mass * actors[j].mass / dist_squ);
-            actors[i].velocity += g;
-
-            //check for collision but only once per couple:
-            if i < j {
-                let touching_dist_squ = (actors[i].radius + actors[j].radius).powf(2.0);
-                if dist_squ < touching_dist_squ {
-                    let (vi, vj) = elastic_collision(&actors[i], &actors[j]);
-                    actors[i].velocity = vi;
-                    actors[j].velocity = vj;
-                }
-            }
+    for (ia , ib) in (0..actors.len()).tuple_combinations() {
+        let r_unit_vec = vec_from_points(actors[ia].pos, actors[ib].pos).normalize();
+        let dist_squ = na::distance_squared(&actors[ia].pos, &actors[ib].pos);
+        //check for collision
+        let touching_dist_squ = (actors[ia].radius + actors[ib].radius).powf(2.0);
+        if dist_squ < touching_dist_squ {
+            let (va, vb) = elastic_collision(&actors[ia], &actors[ib]);
+            actors[ia].velocity = va;
+            actors[ib].velocity = vb;
         }
-        //add little bit of dark matter gravity towards origin to avoid "exploding galaxys"
-        let origin_vec = vec_from_points(actors[i].pos, Point2::origin());
-        actors[i].velocity += origin_vec.normalize() * G_DARK;
+        //apply gravity force fg
+        let fg = r_unit_vec * (G * actors[ia].mass * actors[ib].mass / dist_squ);
+        let delta_vga = fg / actors[ia].mass;
+        let delta_vgb = fg / actors[ib].mass;
+        actors[ia].velocity += delta_vga;
+        actors[ib].velocity -= delta_vgb;
 
-        //calculate new position of this actor
-        let delta_pos = actors[i].velocity * dt;
-        actors[i].pos += delta_pos;
+    }
+    //Thermodynamic hack:
+    //add little bit of dark matter gravity towards origin to avoid "exploding galaxys"
+    // let origin_vec = vec_from_points(actors[i].pos, Point2::origin());
+    // actors[i].velocity += origin_vec.normalize() * G_DARK;
+
+    //calculate new position of this actor
+    for a in actors.into_iter() {
+        let delta_pos = a.velocity * dt;
+        a.pos += delta_pos;
     }
 }
 
