@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use ggez;
 use ggez::conf;
 use ggez::event;
@@ -28,6 +30,7 @@ struct MainState {
     zoom_target: f32,
     speed: f32,
     running: bool,
+    show_traces: bool,
 }
 
 pub fn start(suns: u32) -> GameResult {
@@ -78,7 +81,7 @@ fn draw_actor(
         ctx,
         graphics::DrawMode::fill(),
         pos,
-        // Raius + 1.0 in order to still draws actor for very far-out zooms.
+        // Radius + 1.0 in order to still draws actor for very far-out zooms.
         actor.radius * zoom + 1.0,
         0.05 * actor.radius / zoom,
         graphics::Color::from_rgba_u32(actor.color),
@@ -86,12 +89,34 @@ fn draw_actor(
     graphics::draw(ctx, &circle, DrawParam::default())
 }
 
+fn draw_trace(
+    ctx: &mut Context,
+    trace: &VecDeque<Point2>,
+    color: u32,
+    world_coords: (f32, f32),
+    zoom: f32,
+    center: Point2,
+) -> GameResult {
+    if trace.len() >= 3 {
+        let (screen_w, screen_h) = world_coords;
+        let mut t = Vec::new();
+        for p in trace {
+            t.push(world_to_screen_coords(*p, screen_w, screen_h, zoom, center));
+        }
+        let trace_line =
+            graphics::Mesh::new_line(ctx, &t, 1.0, graphics::Color::from_rgba_u32(color))?;
+        graphics::draw(ctx, &trace_line, DrawParam::default())
+    } else {
+        Ok(())
+    }
+}
+
 impl MainState {
     fn new(ctx: &mut Context, suns: u32) -> GameResult<MainState> {
         graphics::clear(ctx, (30, 40, 40, 255).into());
         let (width, height) = graphics::drawable_size(ctx);
         let s = MainState {
-            suns: create_suns(suns, height / 5.0 * suns as f32),
+            suns: create_suns(suns, height / 20.0 * suns as f32),
             screen_width: width,
             screen_height: height,
             center: Point2::origin(),
@@ -100,6 +125,7 @@ impl MainState {
             zoom_target: 1.0,
             speed: 1.0,
             running: true,
+            show_traces: true,
         };
         Ok(s)
     }
@@ -125,6 +151,10 @@ impl EventHandler for MainState {
         self.center = move_smooth(self.center, self.center_target);
         for s in &self.suns {
             draw_actor(ctx, s, coords, self.zoom, self.center).expect("failed to draw a sun");
+            if self.show_traces {
+                draw_trace(ctx, &s.trace, s.color, coords, self.zoom, self.center)
+                    .expect("failed to draw trace");
+            }
         }
         graphics::present(ctx)?;
         timer::yield_now();
@@ -149,6 +179,7 @@ impl EventHandler for MainState {
             KeyCode::D => self.center_target.x += MOVE_DELTA / self.zoom,
             KeyCode::S => self.center_target.y -= MOVE_DELTA / self.zoom,
             KeyCode::W => self.center_target.y += MOVE_DELTA / self.zoom,
+            KeyCode::T => self.show_traces = !self.show_traces,
             _ => (), //all other events are unhandled
         }
     }

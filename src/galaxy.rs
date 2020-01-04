@@ -1,5 +1,6 @@
 use ggez::nalgebra as na;
 use itertools::Itertools;
+use std::collections::VecDeque;
 
 pub type Point2 = na::Point2<f32>;
 type Vector2 = na::Vector2<f32>;
@@ -14,25 +15,29 @@ const CLASS_G: f32 = 1.1;
 const CLASS_K: f32 = 0.8;
 const CLASS_M: f32 = 0.3;
 
-const G: f32 = 5_000.0;
-// const G_DARK: f32 = G / 100_000.0;
+const G: f32 = 1_000.0;
 const SUN_MAX_STARTING_VELOCITY: f32 = 100.0;
 const SUN_MIN_MASS: f32 = CLASS_M;
 const SUN_MAX_MASS: f32 = CLASS_O;
 const SUN_DENSITY: f32 = 0.002; // higher density -> smaller radius
+
+const TRACE_LEN: usize = 600; // number of points to be drawn as the body's path.
 
 #[derive(Debug, Clone, Copy)]
 enum ActorType {
     Sun,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Actor {
     tag: ActorType,
     id: u32,
     pub pos: Point2,
+    pub trace: VecDeque<Point2>,
+    trace_cnt: u32,
     pub radius: f32,
     velocity: Vector2,
+    new_velocity: Vector2,
     mass: f32,
     pub color: u32,
 }
@@ -74,11 +79,11 @@ fn random_vec(max_magnitude: f32) -> Vector2 {
 }
 
 fn total_momentum(bodys: &[Actor]) -> Vector2 {
-    bodys.iter().map(|&b| b.velocity * b.mass).sum()
+    bodys.iter().map(|b| b.velocity * b.mass).sum()
 }
 
 fn total_mass(bodys: &[Actor]) -> f32 {
-    bodys.iter().map(|&b| b.mass).sum()
+    bodys.iter().map(|b| b.mass).sum()
 }
 
 pub fn create_suns(num: u32, galaxy_radius: f32) -> Vec<Actor> {
@@ -88,7 +93,10 @@ pub fn create_suns(num: u32, galaxy_radius: f32) -> Vec<Actor> {
             tag: ActorType::Sun,
             id: rand::random::<u32>(),
             pos: Point2::origin() + random_vec(galaxy_radius),
+            trace: VecDeque::with_capacity(TRACE_LEN),
+            trace_cnt: 0,
             velocity: random_vec(SUN_MAX_STARTING_VELOCITY),
+            new_velocity: Vector2::new(0.0, 0.0),
             mass: m,
             radius: (m / SUN_DENSITY * 0.75 / std::f32::consts::PI).cbrt(),
             color: color_from_mass(m),
@@ -116,33 +124,36 @@ fn elastic_collision(a1: &Actor, a2: &Actor) -> (Vector2, Vector2) {
 }
 
 pub fn update_vel_and_pos(actors: &mut Vec<Actor>, dt: f32) {
-    for (ia , ib) in (0..actors.len()).tuple_combinations() {
-        let r_unit_vec = vec_from_points(actors[ia].pos, actors[ib].pos).normalize();
-        let dist_squ = na::distance_squared(&actors[ia].pos, &actors[ib].pos);
-        //check for collision
-        let touching_dist_squ = (actors[ia].radius + actors[ib].radius).powf(2.0);
+    for (a, b) in (0..actors.len()).tuple_combinations() {
+        let r_unit_vec = vec_from_points(actors[a].pos, actors[b].pos).normalize();
+        let dist_squ = na::distance_squared(&actors[a].pos, &actors[b].pos);
+        // check for collision
+        let touching_dist_squ = (actors[a].radius + actors[b].radius).powf(2.0);
         if dist_squ < touching_dist_squ {
-            let (va, vb) = elastic_collision(&actors[ia], &actors[ib]);
-            actors[ia].velocity = va;
-            actors[ib].velocity = vb;
+            let (va, vb) = elastic_collision(&actors[a], &actors[b]);
+            actors[a].new_velocity = va;
+            actors[b].new_velocity = vb;
+        } else {
+            //apply gravity force fg
+            let fg = r_unit_vec * (G * actors[a].mass * actors[b].mass / dist_squ);
+            let delta_vg_a = fg / actors[a].mass;
+            let delta_vg_b = -fg / actors[b].mass;
+            actors[a].new_velocity += delta_vg_a;
+            actors[b].new_velocity += delta_vg_b;
         }
-        //apply gravity force fg
-        let fg = r_unit_vec * (G * actors[ia].mass * actors[ib].mass / dist_squ);
-        let delta_vga = fg / actors[ia].mass;
-        let delta_vgb = fg / actors[ib].mass;
-        actors[ia].velocity += delta_vga;
-        actors[ib].velocity -= delta_vgb;
-
     }
-    //Thermodynamic hack:
-    //add little bit of dark matter gravity towards origin to avoid "exploding galaxys"
-    // let origin_vec = vec_from_points(actors[i].pos, Point2::origin());
-    // actors[i].velocity += origin_vec.normalize() * G_DARK;
-
-    //calculate new position of this actor
+    //calculate new position for every actor
     for a in actors.into_iter() {
-        let delta_pos = a.velocity * dt;
-        a.pos += delta_pos;
+        a.velocity = a.new_velocity;
+        a.pos += a.velocity * dt;
+        a.trace_cnt += 1;
+        if a.trace_cnt == 10 {
+            a.trace_cnt = 0;
+            a.trace.push_front(a.pos);
+            if a.trace.len() >= TRACE_LEN {
+                a.trace.pop_back();
+            }
+        }
     }
 }
 
@@ -157,17 +168,25 @@ mod tests {
             tag: ActorType::Sun,
             id: 1,
             pos: Point2::new(0.0, 0.0),
-            velocity: Vector2::new(10.0, 0.0),
-            mass: 10.0,
+            trace: VecDeque::new(),
+            trace_cnt: 0,
             radius: 100.0,
+            velocity: Vector2::new(10.0, 0.0),
+            new_velocity: Vector2::new(0.0, 0.0),
+            mass: 10.0,
+            color: 0x0000_0000,
         };
         let mut b = Actor {
             tag: ActorType::Sun,
             id: 2,
             pos: Point2::new(200.0, 0.0),
-            velocity: Vector2::new(0.0, 0.0),
-            mass: 10.0,
+            trace: VecDeque::new(),
+            trace_cnt: 0,
             radius: 100.0,
+            velocity: Vector2::new(0.0, 0.0),
+            new_velocity: Vector2::new(0.0, 0.0),
+            mass: 10.0,
+            color: 0x0000_0000,
         };
         let (v1, v2) = elastic_collision(&mut a, &mut b);
         //test if both velocities have swaped.
@@ -181,17 +200,25 @@ mod tests {
             tag: ActorType::Sun,
             id: 1,
             pos: Point2::new(0.0, 0.0),
-            velocity: Vector2::new(10.0, 0.0),
-            mass: 10.0,
+            trace: VecDeque::new(),
+            trace_cnt: 0,
             radius: 100.0,
+            velocity: Vector2::new(10.0, 0.0),
+            new_velocity: Vector2::new(0.0, 0.0),
+            mass: 10.0,
+            color: 0x0000_0000,
         };
         let mut b = Actor {
             tag: ActorType::Sun,
             id: 2,
             pos: Point2::new(200.0, 0.0),
-            velocity: Vector2::new(-10.0, 0.0),
-            mass: 10.0,
+            trace: VecDeque::new(),
+            trace_cnt: 0,
             radius: 100.0,
+            velocity: Vector2::new(-10.0, 0.0),
+            new_velocity: Vector2::new(0.0, 0.0),
+            mass: 10.0,
+            color: 0x0000_0000,
         };
         let (v1, v2) = elastic_collision(&mut a, &mut b);
         //test if both velocities have swaped.
