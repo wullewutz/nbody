@@ -22,6 +22,8 @@ use structopt::StructOpt;
 ///
 /// i/o - zoom in/out.
 ///
+/// t - toggle body traces
+///
 /// q - quit
 struct Opt {
     #[structopt(short, long, default_value = "3")]
