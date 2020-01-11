@@ -150,11 +150,11 @@ impl EventHandler for MainState {
         self.zoom = zoom_smooth(self.zoom, self.zoom_target);
         self.center = move_smooth(self.center, self.center_target);
         for s in &self.suns {
-            draw_actor(ctx, s, coords, self.zoom, self.center).expect("failed to draw a sun");
             if self.show_traces {
                 draw_trace(ctx, &s.trace, s.color, coords, self.zoom, self.center)
                     .expect("failed to draw trace");
             }
+            draw_actor(ctx, s, coords, self.zoom, self.center).expect("failed to draw a sun");
         }
         graphics::present(ctx)?;
         timer::yield_now();
