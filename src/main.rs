@@ -1,4 +1,4 @@
-//! An attempt to create a n-body simulation that might become a game one day.
+//! n-body simulation
 //! Inspired by the book "The Three Body Problem" by Liu Cixin.
 
 mod game;

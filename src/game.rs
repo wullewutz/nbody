@@ -1,6 +1,5 @@
 use std::collections::VecDeque;
 
-use ggez;
 use ggez::conf;
 use ggez::event;
 use ggez::event::{EventHandler, KeyCode, KeyMods};
@@ -38,8 +37,8 @@ pub fn start(suns: u32) -> GameResult {
         .window_setup(conf::WindowSetup::default().title("nbody!"))
         .window_mode(conf::WindowMode::default().dimensions(SCREEN_W, SCREEN_H));
 
-    let (ctx, events_loop) = &mut cb.build()?;
-    let game = &mut MainState::new(ctx, suns)?;
+    let (mut ctx, events_loop) = cb.build()?;
+    let game = MainState::new(&mut ctx, suns)?;
     event::run(ctx, events_loop, game)
 }
 
@@ -119,8 +118,8 @@ impl MainState {
             suns: create_suns(suns, height / 20.0 * suns as f32),
             screen_width: width,
             screen_height: height,
-            center: Point2::origin(),
-            center_target: Point2::origin(),
+            center: Point2::ZERO,
+            center_target: Point2::ZERO,
             zoom: 1.0,
             zoom_target: 1.0,
             speed: 1.0,
@@ -171,8 +170,8 @@ impl EventHandler for MainState {
         match keycode {
             KeyCode::Escape | KeyCode::Q => event::quit(ctx),
             KeyCode::Space => self.running = !self.running,
-            KeyCode::Add => self.speed *= SPEED_FACTOR,
-            KeyCode::Subtract => self.speed /= SPEED_FACTOR,
+            KeyCode::Plus => self.speed *= SPEED_FACTOR,
+            KeyCode::Minus => self.speed /= SPEED_FACTOR,
             KeyCode::I => self.zoom_target *= ZOOM_FACTOR,
             KeyCode::O => self.zoom_target /= ZOOM_FACTOR,
             KeyCode::A => self.center_target.x -= MOVE_DELTA / self.zoom,

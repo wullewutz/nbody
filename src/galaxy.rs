@@ -1,9 +1,9 @@
-use ggez::nalgebra as na;
+use glam::*;
 use itertools::Itertools;
 use std::collections::VecDeque;
 
-pub type Point2 = na::Point2<f32>;
-type Vector2 = na::Vector2<f32>;
+pub type Point2 = Vec2;
+type Vector2 = Vec2;
 
 //Star class taken from table at
 //https://de.wikipedia.org/wiki/Klassifizierung_der_Sterne
@@ -69,7 +69,7 @@ fn vec_from_angle(angle: f32) -> Vector2 {
 }
 
 fn vec_from_points(from: Point2, to: Point2) -> Vector2 {
-    to.coords - from.coords
+    to - from
 }
 
 fn random_vec(max_magnitude: f32) -> Vector2 {
@@ -79,7 +79,12 @@ fn random_vec(max_magnitude: f32) -> Vector2 {
 }
 
 fn total_momentum(bodys: &[Actor]) -> Vector2 {
-    bodys.iter().map(|b| b.velocity * b.mass).sum()
+    //bodys.iter().map(|b| b.velocity * b.mass).sum()
+    let mut sum = Vector2::ZERO;
+    for b in bodys.iter() {
+        sum += b.velocity * b.mass;
+    }
+    sum
 }
 
 fn total_mass(bodys: &[Actor]) -> f32 {
@@ -92,7 +97,7 @@ pub fn create_suns(num: u32, galaxy_radius: f32) -> Vec<Actor> {
         Actor {
             tag: ActorType::Sun,
             id: rand::random::<u32>(),
-            pos: Point2::origin() + random_vec(galaxy_radius),
+            pos: Point2::ZERO + random_vec(galaxy_radius),
             trace: VecDeque::with_capacity(TRACE_LEN),
             trace_cnt: 0,
             velocity: random_vec(SUN_MAX_STARTING_VELOCITY),
@@ -116,8 +121,8 @@ fn elastic_collision(a1: &Actor, a2: &Actor) -> (Vector2, Vector2) {
     fn v_afterwards(this: &Actor, that: &Actor) -> Vector2 {
         this.velocity
             - 2.0 * that.mass / (this.mass + that.mass)
-                * (this.velocity - that.velocity).dot(&(this.pos - that.pos))
-                / (this.pos - that.pos).norm_squared()
+                * (this.velocity - that.velocity).dot(this.pos - that.pos)
+                / (this.pos.distance_squared(that.pos))
                 * (this.pos - that.pos)
     }
     (v_afterwards(a1, a2), v_afterwards(a2, a1))
@@ -126,7 +131,7 @@ fn elastic_collision(a1: &Actor, a2: &Actor) -> (Vector2, Vector2) {
 pub fn update_vel_and_pos(actors: &mut Vec<Actor>, dt: f32) {
     for (a, b) in (0..actors.len()).tuple_combinations() {
         let r_unit_vec = vec_from_points(actors[a].pos, actors[b].pos).normalize();
-        let dist_squ = na::distance_squared(&actors[a].pos, &actors[b].pos);
+        let dist_squ = actors[a].pos.distance_squared(actors[b].pos);
         // check for collision
         let touching_dist_squ = (actors[a].radius + actors[b].radius).powf(2.0);
         if dist_squ < touching_dist_squ {
@@ -143,7 +148,7 @@ pub fn update_vel_and_pos(actors: &mut Vec<Actor>, dt: f32) {
         }
     }
     //calculate new position for every actor
-    for a in actors.into_iter() {
+    for a in actors.iter_mut() {
         a.velocity = a.new_velocity;
         a.pos += a.velocity * dt;
         a.trace_cnt += 1;
